@@ -1,19 +1,75 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 3D Spectacle Store
 
-# Run and deploy your AI Studio app
+An immersive React + Three.js storefront for premium eyewear. The app combines a cinematic landing page, a live 3D spectacle preview, a custom frame builder, product collections, and a slide-out cart experience.
 
-This contains everything you need to run your app locally.
-https://ai.studio/apps/3f50303c-568b-4a3a-bd17-9eb7e7540bea
+## Features
 
-## Run Locally
+- Real-time 3D spectacle rendering with scroll-driven scene updates
+- Frame customization for style, frame color, lens color, engraving, and gold hinge accents
+- Dynamic pricing for bespoke orders
+- Product collection browsing and direct add-to-cart actions
+- Cart drawer with quantity updates and item removal
+- Motion-rich UI built with React, Three.js, GSAP, and Motion
 
-**Prerequisites:**  Node.js
+## Tech Stack
 
+- React 19
+- Vite
+- TypeScript
+- Three.js
+- Tailwind CSS v4
+- Motion
+- Lucide React icons
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18 or newer
+
+### Install
+
+```bash
+npm install
+```
+
+### Configure Environment
+
+Create a local `.env` or `.env.local` file if you want to run the app outside of the hosted AI Studio environment:
+
+```bash
+GEMINI_API_KEY="your_gemini_api_key"
+APP_URL="http://localhost:3000"
+```
+
+`GEMINI_API_KEY` is required for Gemini API calls. `APP_URL` is useful for local links and callbacks.
+
+### Run Locally
+
+```bash
+npm run dev
+```
+
+The app runs on `http://localhost:3000`.
+
+## Available Scripts
+
+- `npm run dev` - start the Vite development server
+- `npm run build` - create a production build
+- `npm run preview` - preview the production build locally
+- `npm run lint` - run the TypeScript check
+- `npm run clean` - remove generated build artifacts
+
+## Project Structure
+
+- `src/App.tsx` - top-level page composition and state management
+- `src/components/SpecsCanvas.tsx` - 3D scene and scroll-synced spectacle render
+- `src/components/CustomizerSection.tsx` - bespoke eyewear builder
+- `src/components/ProductCollection.tsx` - featured product grid
+- `src/components/CartDrawer.tsx` - shopping cart sidebar
+- `src/components/Navbar.tsx` - floating navigation
+- `src/components/TechHighlights.tsx` - product and brand highlights
+
+## Notes
+
+This repository was originally scaffolded in AI Studio, but the README now reflects the actual eyewear storefront experience in this codebase.
