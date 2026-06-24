@@ -1,6 +1,6 @@
 # 3D Spectacle Store
 
-An immersive React + Three.js storefront for premium eyewear. The app combines a cinematic landing page, a live 3D spectacle preview, a custom frame builder, product collections, and a slide-out cart experience.
+An immersive React + Three.js storefront for premium eyewear. This project is a complete front-end experience with a cinematic landing page, live 3D spectacle preview, a custom frame builder, product collections, and a slide-out cart.
 
 ## Features
 
@@ -10,6 +10,7 @@ An immersive React + Three.js storefront for premium eyewear. The app combines a
 - Product collection browsing and direct add-to-cart actions
 - Cart drawer with quantity updates and item removal
 - Motion-rich UI built with React, Three.js, GSAP, and Motion
+- No API key required to run the UI locally
 
 ## Tech Stack
 
@@ -35,14 +36,15 @@ npm install
 
 ### Configure Environment
 
-Create a local `.env` or `.env.local` file if you want to run the app outside of the hosted AI Studio environment:
+You do not need a Gemini API key to run the storefront UI.
+
+If you want to match the AI Studio environment, you can optionally create a local `.env` or `.env.local` file:
 
 ```bash
-GEMINI_API_KEY="your_gemini_api_key"
 APP_URL="http://localhost:3000"
 ```
 
-`GEMINI_API_KEY` is required for Gemini API calls. `APP_URL` is useful for local links and callbacks.
+`APP_URL` is useful for local links and callbacks, but the UI works without it.
 
 ### Run Locally
 
@@ -72,4 +74,4 @@ The app runs on `http://localhost:3000`.
 
 ## Notes
 
-This repository was originally scaffolded in AI Studio, but the README now reflects the actual eyewear storefront experience in this codebase.
+This repository was originally scaffolded in AI Studio, but the README now reflects the actual eyewear storefront experience in this codebase. The application is self-contained and does not require external API credentials for normal use.
