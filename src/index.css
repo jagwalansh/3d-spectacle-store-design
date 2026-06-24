@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --color-gold-accent: #b5a68e;
+  --color-charcoal-dark: #121213;
+  --color-clinical-gray: #f8f9fb;
+}
+
+/* Custom styling rules for rich layouts, smooth overlays & gradients */
+body {
+  background-color: #0a0a0b;
+  color: #f3f4f6;
+  overflow-x: hidden;
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background-color: #b5a68e;
+  color: #0a0a0b;
+}
+
+/* Custom Sleek Blueprint Dot Grid */
+.sleek-dot-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 0.8px, transparent 0.8px);
+  background-size: 32px 32px;
+}
+
+/* High-contrast smooth ambient lights */
+.ambient-blur-glow {
+  filter: blur(140px);
+  opacity: 0.25;
+  background: radial-gradient(circle, #b5a68e 0%, rgba(0,0,0,0) 70%);
+}
+
+/* Micro-geometric border and hover styling */
+.sleek-card {
+  background: rgba(18, 18, 19, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sleek-card:hover {
+  border-color: rgba(181, 166, 142, 0.3);
+  box-shadow: 0 10px 40px rgba(181, 166, 142, 0.06);
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0b;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b5a68e;
+}
+
+/* Dynamic slide animation filters */
+@keyframes scrollDownFloat {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+}
+
+.scroll-arrow-anim {
+  animation: scrollDownFloat 2s infinite ease-in-out;
+}
