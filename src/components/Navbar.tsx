@@ -44,18 +44,18 @@ export default function Navbar({ cartCount, onCartClick, activeSection }: Navbar
 
   const getSectionIndicator = () => {
     switch (activeSection) {
-      case 'hero': return '01 / Introduction';
-      case 'tech': return '02 / Engineering';
-      case 'customizer': return '03 / Bespoke Workshop';
-      case 'catalog': return '04 / Curated Collection';
-      default: return '01 / Introduction';
+      case 'hero': return 'Home';
+      case 'tech': return 'Materials';
+      case 'customizer': return 'Customize';
+      case 'catalog': return 'Collection';
+      default: return 'Home';
     }
   };
 
   return (
     <nav 
       id="main-navigation"
-      className="fixed top-0 left-0 w-full z-50 px-6 py-4 md:px-12 flex justify-between items-center transition-all duration-300 bg-[#0a0a0b]/80 backdrop-blur-md border-b border-neutral-900"
+      className="fixed top-0 left-0 w-full z-50 px-6 py-6 md:px-12 flex justify-between items-start transition-all duration-300 bg-gradient-to-b from-[#0b0b0a]/80 to-transparent"
     >
       {/* Brand logo */}
       <div 
@@ -63,18 +63,18 @@ export default function Navbar({ cartCount, onCartClick, activeSection }: Navbar
         className="flex flex-col cursor-pointer"
         onClick={() => scrollSectionTo('hero-trigger')}
       >
-        <span className="text-xl font-sans tracking-[0.3em] font-light text-white uppercase">
-          O P T I Q U E
+        <span className="text-lg font-sans tracking-[0.28em] font-light text-white uppercase">
+          Optique
         </span>
-        <span className="text-[9px] font-mono tracking-widest text-[#b5a68e] uppercase leading-none mt-1 font-bold">
-          Atelier of Vision
+        <span className="text-xs text-neutral-500 leading-none mt-2">
+          Handmade eyewear
         </span>
       </div>
 
       {/* Center Nav Anchors */}
       <div 
         id="navbar-anchors"
-        className="hidden md:flex items-center gap-8 bg-neutral-900/80 border border-neutral-800 backdrop-blur-md px-6 py-2.5 rounded-full shadow-lg"
+        className="hidden md:flex items-center gap-12 pt-2"
       >
         {navItems.map((item) => {
           const isActive = 
@@ -87,14 +87,13 @@ export default function Navbar({ cartCount, onCartClick, activeSection }: Navbar
             <button
               key={item.id}
               onClick={() => scrollSectionTo(item.id)}
-              className={`flex items-center gap-1.5 text-xs tracking-wider uppercase font-semibold transition-all duration-300 relative ${
-                isActive ? 'text-white font-bold' : 'text-neutral-400 hover:text-white'
+              className={`text-sm transition-all duration-300 relative ${
+                isActive ? 'text-white font-bold' : 'text-neutral-500 hover:text-white'
               }`}
             >
-              <item.icon className="w-3.5 h-3.5" />
               <span>{item.label}</span>
               {isActive && (
-                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-[#b5a68e] rounded-full" />
+                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-6 h-px bg-[#b5a68e]" />
               )}
             </button>
           );
@@ -104,22 +103,24 @@ export default function Navbar({ cartCount, onCartClick, activeSection }: Navbar
       {/* Right Action panel */}
       <div id="navbar-actions" className="flex items-center gap-4">
         {/* Dynamic Section Indicator */}
-        <div className="hidden lg:block text-right border-r border-neutral-800 pr-4 mr-1">
-          <span className="text-[9px] font-mono text-neutral-400 tracking-wider block uppercase font-semibold">Current Phase</span>
-          <span className="text-xs font-mono font-bold text-[#b5a68e]">{getSectionIndicator()}</span>
+        <div className="hidden lg:block text-right border-r border-neutral-700/70 pr-6 mr-2">
+          <span className="text-xs text-neutral-500 block">Viewing</span>
+          <span className="text-sm font-medium text-neutral-200">{getSectionIndicator()}</span>
         </div>
 
         {/* Interactive Shopping Cart Trigger */}
         <button
           onClick={onCartClick}
-          className="relative bg-neutral-850 text-white p-3 rounded-full hover:bg-neutral-750 transition-all shadow-md group flex items-center gap-2 hover:scale-105 active:scale-95"
+          className="relative text-white pt-1 transition-all group flex items-center gap-3 hover:text-[#b5a68e] active:scale-95"
           style={{ cursor: 'pointer' }}
           id="cart-trigger-btn"
         >
-          <ShoppingBag className="w-4 h-4 text-neutral-100 group-hover:rotate-6 transition-transform" />
-          <span className="text-xs font-mono font-medium hidden sm:inline-block pr-1">Atelier Cart</span>
+          <span className="w-8 h-8 border border-neutral-500 flex items-center justify-center">
+            <ShoppingBag className="w-4 h-4 text-neutral-100 group-hover:rotate-6 transition-transform" />
+          </span>
+          <span className="text-sm font-medium hidden sm:inline-block">Cart</span>
           {cartCount > 0 ? (
-            <span className="absolute -top-1 -right-1 bg-[#b5a68e] text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-mono font-bold border-2 border-[#0a0a0b] animate-[bounce_1.5s_infinite]">
+            <span className="absolute -top-1 -right-1 bg-[#b5a68e] text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-mono font-bold border-2 border-[#0a0a0b]">
               {cartCount}
             </span>
           ) : (

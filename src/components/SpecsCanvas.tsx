@@ -694,10 +694,9 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
 
       // Initialize HTML elements to hidden layout states
       gsap.set('#main-navigation', { opacity: 0, y: -40 });
-      gsap.set('#hero-left-text', { opacity: 0, x: -50 });
-      gsap.set('#hero-right-text', { opacity: 0, x: 50 });
+      gsap.set('#hero-left-text', { opacity: 0, x: -28 });
+      gsap.set('#hero-right-text', { opacity: 0, x: 28 });
       gsap.set('#hero-scroll-indicator', { opacity: 0, y: 30 });
-      gsap.set('#hero-footer-details', { opacity: 0, y: 20 });
       gsap.set('#customizer-panel-section', { opacity: 0, y: 150 });
       gsap.set('#catalog-trigger', { opacity: 0, y: 80 });
 
@@ -729,14 +728,14 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
       tl.to(specsGroup.position, {
         x: 0,
         y: 0.35,
-        z: 1.35,
+        z: 1.15,
         ease: 'power2.out'
       }, 0.05);
 
       tl.to(specsGroup.scale, {
-        x: isDesktop ? 1.25 : (isTablet ? 1.15 : 0.95),
-        y: isDesktop ? 1.25 : (isTablet ? 1.15 : 0.95),
-        z: isDesktop ? 1.25 : (isTablet ? 1.15 : 0.95),
+        x: isDesktop ? 0.78 : (isTablet ? 0.72 : 0.62),
+        y: isDesktop ? 0.78 : (isTablet ? 0.72 : 0.62),
+        z: isDesktop ? 0.78 : (isTablet ? 0.72 : 0.62),
         ease: 'power2.out'
       }, 0.05);
 
@@ -764,21 +763,15 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
         opacity: 1,
         x: 0,
         ease: 'power2.out'
-      }, 0.38);
+      }, 0.48);
 
       tl.to('#hero-right-text', {
         opacity: 1,
         x: 0,
         ease: 'power2.out'
-      }, 0.38);
+      }, 0.48);
 
       tl.to('#hero-scroll-indicator', {
-        opacity: 1,
-        y: 0,
-        ease: 'power2.out'
-      }, 0.42);
-
-      tl.to('#hero-footer-details', {
         opacity: 1,
         y: 0,
         ease: 'power2.out'
@@ -1081,19 +1074,6 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
       className="fixed inset-0 w-full h-full pointer-events-none"
       style={{ zIndex: 10 }}
     >
-      <div className="absolute top-4 left-4 z-40 bg-neutral-950/80 backdrop-blur-md px-4 py-2 rounded-full border border-neutral-800 flex items-center gap-2 shadow-lg text-xs font-mono text-neutral-300">
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="font-semibold tracking-wider">OPTIQUE™ REAL-TIME ENGINE</span>
-      </div>
-
-      {/* Sleek Theme Tech Labels */}
-      <div className="absolute top-20 left-6 flex flex-col gap-1 z-40 hidden sm:flex pointer-events-auto bg-neutral-950/50 backdrop-blur-md p-3 rounded-lg border border-neutral-800">
-        <div className="text-[10px] font-mono text-[#b5a68e] tracking-wider font-bold">CALIBRATION READOUTS:</div>
-        <div className="text-[10px] font-mono text-neutral-400 flex items-center gap-1">ROTATION: <span className="text-neutral-200 font-semibold">DYNAMIC SCROLL</span></div>
-        <div className="text-[10px] font-mono text-neutral-400 flex items-center gap-1">ELEVATION: <span className="text-neutral-200 font-semibold">12.0° ATELIER</span></div>
-        <div className="text-[10px] font-mono text-neutral-400 flex items-center gap-1">ENGINE: <span className="text-neutral-200 font-semibold">WEBGL THREE.JS</span></div>
-      </div>
-      
       <canvas
         ref={canvasRef}
         className="w-full h-full block opacity-0 transition-opacity duration-700 ease-out"

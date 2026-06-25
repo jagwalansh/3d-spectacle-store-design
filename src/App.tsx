@@ -6,7 +6,8 @@ import TechHighlights from './components/TechHighlights';
 import CustomizerSection from './components/CustomizerSection';
 import ProductCollection from './components/ProductCollection';
 import CartDrawer from './components/CartDrawer';
-import { ArrowDown, Check, MousePointer, Info, Layers, Hammer, Compass, Award } from 'lucide-react';
+import DotField from './components/DotField';
+import { Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -86,7 +87,7 @@ export default function App() {
     // Create custom product instance
     const bespokeProduct: Product = {
       id: `bespoke-specs-${Date.now()}`,
-      name: 'Bespoke Custom Eyewear',
+      name: 'Custom Eyewear',
       style: customization.style,
       frameColor: customization.frameColor,
       lensColor: customization.lensColor,
@@ -126,7 +127,7 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#0a0a0b] selection:bg-[#b5a68e] select-none text-neutral-200 sleek-dot-grid" id="store-workspace">
+    <div className="relative min-h-screen bg-[#0b0b0a] selection:bg-[#b5a68e] select-none text-neutral-200" id="store-workspace">
       {/* 1. Luxurious opening loading animation */}
       <AnimatePresence>
         {isLoading && (
@@ -156,12 +157,12 @@ export default function App() {
                   initial={{ letterSpacing: '0.2em', opacity: 0 }}
                   animate={{ letterSpacing: '0.45em', opacity: 1 }}
                   transition={{ duration: 1.2, ease: 'easeOut' }}
-                  className="text-2xl sm:text-3xl font-sans font-extralight text-white tracking-[0.45em]"
+                  className="text-2xl sm:text-3xl font-sans font-extralight text-white tracking-[0.32em]"
                 >
                   O P T I Q U E
                 </motion.h1>
-                <p className="text-[9px] font-mono tracking-[0.3em] text-neutral-500 uppercase">
-                  ATELIER DE SYNTHÈSE SPATIALE
+                <p className="text-xs text-neutral-500">
+                  Handmade eyewear
                 </p>
               </div>
 
@@ -176,7 +177,7 @@ export default function App() {
                   />
                 </div>
                 <div className="flex justify-between text-[10px] font-mono text-neutral-500">
-                  <span>SYSTEM READY</span>
+                  <span>Loading</span>
                   <span>{loadingProgress}%</span>
                 </div>
               </div>
@@ -211,104 +212,74 @@ export default function App() {
       {/* --- SECTION 1: HERO VIEW (01 / Introduction) --- */}
       <section
         id="hero-trigger"
-        className="relative min-h-[105vh] flex flex-col justify-between pt-36 pb-12 px-6 sm:px-12 md:px-24 overflow-hidden"
+        className="relative min-h-screen flex items-center px-6 sm:px-12 md:px-20 overflow-hidden"
       >
-        {/* Sleek dynamic blur circle */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] ambient-blur-glow pointer-events-none" />
+        <div className="absolute inset-0 z-0 pointer-events-auto">
+          <DotField
+            dotRadius={1.5}
+            dotSpacing={15}
+            bulgeStrength={60}
+            glowRadius={70}
+            sparkle
+            waveAmplitude={0}
+            cursorRadius={450}
+            cursorForce={0.31}
+            bulgeOnly
+            gradientFrom="#d6cfdd"
+            gradientTo="#8c52c2"
+            glowColor="#b5a68e"
+          />
+        </div>
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(11,11,10,0.94)_0%,rgba(11,11,10,0.18)_46%,rgba(11,11,10,0.9)_100%)] pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#0a0a0b] to-transparent pointer-events-none" />
 
-        {/* Editorial Text Symmetrical Grid */}
-        <div className="relative z-20 w-full max-w-7xl mx-auto flex-1 flex flex-col md:flex-row justify-between items-center gap-12 md:gap-0 pt-24 pb-8 h-full">
-          {/* Left Column: introducing spec */}
-          <div id="hero-left-text" className="flex-1 flex flex-col justify-center items-start w-full md:w-auto md:pr-12 text-left space-y-5 opacity-0 pointer-events-none">
-            <span className="text-[11px] font-mono text-[#b5a68e] tracking-[0.25em] block uppercase font-bold">
-              EST. 2026 • EUROPEAN DESIGN SYSTEM
-            </span>
-            <div className="space-y-2">
-              <span className="text-xs font-mono text-neutral-500 tracking-[0.3em] uppercase block font-bold">
-                01 / INTRODUCING
-              </span>
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-sans font-black tracking-tighter text-white uppercase leading-[0.85]">
-                THE <br />
-                <span className="text-[#b5a68e]">SPEC</span>
+        <div className="relative z-20 w-full max-w-[1500px] mx-auto grid grid-cols-1 lg:grid-cols-[0.7fr_1.6fr_0.7fr] items-center gap-10 pt-28 lg:pt-16">
+          <div id="hero-left-text" className="opacity-0 pointer-events-none space-y-4 max-w-[310px]">
+            <div className="space-y-4 mb-30 ">
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-sans leading-[0.95] tracking-normal text-white">
+                Introducing
               </h1>
+              <div className="w-14 h-px bg-[#b5a68e]" />
             </div>
-            <p className="text-xs font-mono text-neutral-400 leading-relaxed uppercase max-w-xs">
-              Hand-sculpted responsive cellulose acetate with solid-gilded brass cores. Calibrated using Three.js spatial projections.
+          </div>
+
+          <div id="hero-scroll-indicator" className="opacity-0 pointer-events-none min-h-[360px] lg:min-h-[620px]" />
+
+          <div id="hero-right-text" className="opacity-0 pointer-events-auto space-y-7 max-w-[310px] lg:justify-self-end">
+            <div className="space-y-4">
+              <span className="text-sm text-[#b5a68e]">
+                
+              </span>
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-sans mr-40 leading-[0.95] tracking-wider text-[#b5a68e]">
+                Opitque
+              </h2>
+            </div>
+
+            <p className="text-base text-neutral-400 leading-relaxed max-w-xs">
+              A round acetate frame with warm metal detailing, built for daily wear rather than display-case drama.
             </p>
-            <div className="pt-4 border-t border-neutral-800 w-full max-w-[240px]">
-              <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-[0.15em] block font-bold mb-1">
-                ATELIER CALIBRATION
-              </span>
-              <p className="text-[10px] font-mono text-neutral-500 leading-tight">
-                Zeiss AR Filter System • 5-Barrel Gold Hinge • Titanium Spline
-              </p>
-            </div>
-          </div>
 
-          {/* Symmetrical Central Spacer reserved for 3D case & spectacles */}
-          <div className="w-full md:w-[35%] h-[320px] md:h-[450px] pointer-events-none flex-shrink-0" />
-
-          {/* Right Column: company name */}
-          <div id="hero-right-text" className="flex-1 flex flex-col justify-center items-end w-full md:w-auto md:pl-12 text-right space-y-5 opacity-0 pointer-events-none">
-            <span className="text-[11px] font-mono text-[#b5a68e] tracking-[0.25em] block uppercase font-bold">
-              MEDITERRANEAN CRAFT ARCHITECTURE
-            </span>
-            <div className="space-y-2">
-              <span className="text-xs font-mono text-neutral-500 tracking-[0.3em] uppercase block font-bold">
-                02 / MANUFACTORY
-              </span>
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-sans font-black tracking-tighter text-white uppercase leading-[0.85]">
-                OPTIQUE <br />
-                <span className="text-neutral-500">CO.</span>
-              </h1>
-            </div>
-            <p className="text-xs font-mono text-neutral-400 leading-relaxed uppercase max-w-xs">
-              Every curve representing hundreds of hours of manual refinement, fusing Italian premium heritage with mechanical performance.
-            </p>
-            <div className="pt-4 border-t border-neutral-800 w-full max-w-[240px] text-right ml-auto">
-              <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-[0.15em] block font-bold mb-1">
-                LIMITED EDITION
-              </span>
-              <p className="text-[10px] font-mono text-neutral-500 leading-tight">
-                Batch 04 // 250 Units Produced globally with custom engraving
-              </p>
-            </div>
+            <button
+              onClick={() => {
+                const features = document.getElementById('features-trigger');
+                if (features) features.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="group flex items-center gap-4 border-b border-[#b5a68e]/45 pb-3 text-sm text-neutral-300 hover:text-white transition-colors"
+              style={{ cursor: 'pointer' }}
+            >
+              <span>Explore the frame</span>
+              <span className="text-[#b5a68e] transition-transform group-hover:translate-x-2">→</span>
+            </button>
           </div>
         </div>
 
-        {/* Floating Indicator calling user attention to scroll */}
-        <div id="hero-scroll-indicator" className="relative z-20 flex flex-col items-center justify-center mt-32 md:mt-0 opacity-0 pointer-events-none">
-          <div className="bg-neutral-900/80 backdrop-blur-md px-6 py-3 rounded-full border border-neutral-800 shadow-lg text-[10px] font-mono text-neutral-300 flex items-center gap-3 tracking-wider hover:border-[#b5a68e]/35 transition-all">
-            <MousePointer className="w-3.5 h-3.5 text-[#b5a68e] animate-pulse" />
-            <span>SCROLL DOWN TO ENGAGE 3D DECOMPOSITION</span>
-          </div>
-        </div>
-
-        {/* Hero Footer details */}
-        <div id="hero-footer-details" className="grid grid-cols-1 sm:grid-cols-3 gap-6 relative z-20 border-t border-neutral-800 pt-8 w-full max-w-7xl mx-auto text-[10px] font-mono text-neutral-400 opacity-0 pointer-events-none">
-          <div className="flex items-center gap-2.5">
-            <Compass className="w-4 h-4 text-[#b5a68e]" />
-            <span>01 / INTEGRATED DEDICATED VIEWPORT</span>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <Hammer className="w-4 h-4 text-[#b5a68e]" />
-            <span>02 / BIO-RESOURCES VERIFIED GLASS</span>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <Award className="w-4 h-4 text-[#b5a68e]" />
-            <span>03 / HAND-FINISHED SPLINE CHASSIS</span>
-          </div>
-        </div>
       </section>
 
       {/* --- SECTION 2: ENGINEERING (02 / Craftsmanship) --- */}
       <section
         id="features-trigger"
-        className="relative min-h-[110vh] flex flex-col justify-center py-20 bg-neutral-950/30 border-y border-neutral-800/40"
+        className="relative min-h-[180vh] bg-neutral-950/95 border-y border-neutral-800/40 py-28"
       >
-        {/* Sleek ambient light behind details */}
-        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-[#b5a68e]/5 rounded-full blur-[120px] pointer-events-none" />
-
         <div className="w-full relative z-20">
           {/* TechHighlights handles item detail selection and hotspot previews */}
           <TechHighlights />
@@ -326,11 +297,6 @@ export default function App() {
         {/* Customization controls centered directly below the 3D model viewport */}
         <div className="w-full max-w-5xl mx-auto relative z-20" id="customizer-panel-section">
           <div className="relative">
-            {/* Highlight callouts */}
-            <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-neutral-900 text-[#b5a68e] border border-[#b5a68e]/20 text-[9px] font-mono px-3.5 py-1 rounded-full uppercase tracking-wider font-bold shadow-md">
-              Bespoke Configuration Lab Active
-            </div>
-
             <CustomizerSection
               customization={customization}
               onCustomizationChange={setCustomization}
@@ -355,60 +321,73 @@ export default function App() {
       </section>
 
       {/* --- PREMIUM BRAND FOOTER --- */}
-      <footer id="atelier-footer" className="bg-[#121213] text-neutral-400 py-16 px-6 sm:px-12 md:px-24 border-t border-neutral-900 relative overflow-hidden" style={{ contentVisibility: 'auto' }}>
-        {/* Decorative elements */}
-        <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-[#b5a68e]/10 rounded-full blur-3xl pointer-events-none" />
-
+      <footer id="atelier-footer" className="bg-[#121213] text-neutral-400 py-16 px-6 sm:px-12 md:px-24 border-t border-neutral-900 relative overflow-hidden">
+        <div className="absolute inset-0 z-0 opacity-45">
+              <DotField
+                dotRadius={1.5}
+                dotSpacing={15}
+                bulgeStrength={60}
+                glowRadius={70}
+                sparkle
+                waveAmplitude={0}
+                cursorRadius={450}
+                cursorForce={0.31}
+                bulgeOnly
+                gradientFrom="#d6cfdd"
+                gradientTo="#8c52c2"
+                glowColor="#b5a68e"
+              />
+            </div>
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 w-full max-w-7xl mx-auto relative z-10 text-xs text-sans pb-12 border-b border-neutral-900">
           <div className="md:col-span-4 space-y-4">
-            <span className="text-lg font-sans tracking-[0.3em] font-light text-white block uppercase">
-              O P T I Q U E
+            <span className="text-lg font-sans tracking-[0.18em] font-light text-white block uppercase">
+              Optique
             </span>
-            <p className="text-[11px] leading-relaxed max-w-xs text-neutral-500">
-              A private optical atelier creating premium responsive spectacles. Blending classic European metal craftsmanship with progressive organic polymers.
+            <p className="text-sm leading-relaxed max-w-xs text-neutral-500">
+              Small-batch eyewear with customizable frame shapes, lens tints, and engraving.
             </p>
           </div>
 
           <div className="md:col-span-4 space-y-2">
-            <h4 className="font-mono text-neutral-300 font-bold uppercase tracking-wider">MUSEUMS & STUDIOS</h4>
-            <ul className="space-y-1.5 text-neutral-500 text-[11px]">
-              <li>Galleria Manzoni, Corso 16, Milan, Italy</li>
-              <li>Sacre Coeur Block B, Atelier 04, Paris, France</li>
-              <li>Bespoke Glassworks Warehouse 12, Brooklyn, USA</li>
+            <h4 className="text-neutral-300 font-semibold">Visit</h4>
+            <ul className="space-y-1.5 text-neutral-500 text-sm">
+              <li>Galleria Manzoni, Milan</li>
+              <li>Saint-Germain, Paris</li>
+              <li>Brooklyn, New York</li>
             </ul>
           </div>
 
           <div className="md:col-span-4 space-y-3.5">
-            <h4 className="font-mono text-neutral-300 font-bold uppercase tracking-wider">STUDIO NEWSLETTER</h4>
+            <h4 className="text-neutral-300 font-semibold">Newsletter</h4>
             {isSubscribed ? (
-              <div id="newsletter-success" className="bg-[#b5a68e]/10 border border-[#b5a68e]/35 p-3 rounded-lg text-[11px] text-[#b5a68e] font-mono leading-relaxed">
-                ✓ Subscription registered successfully. Welcome to Optique Studio, Milan.
+              <div id="newsletter-success" className="bg-[#b5a68e]/10 border border-[#b5a68e]/35 p-3 rounded-lg text-sm text-[#b5a68e] leading-relaxed">
+                You are subscribed.
               </div>
             ) : (
               <div className="flex gap-2">
                 <input
                   type="email"
                   placeholder="Submit your email"
-                  className="bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-[11px] placeholder:text-neutral-600 focus:outline-none focus:border-neutral-700 w-full"
+                  className="bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm placeholder:text-neutral-600 focus:outline-none focus:border-neutral-700 w-full"
                 />
                 <button 
                   onClick={() => setIsSubscribed(true)}
-                  className="bg-neutral-800 px-3 py-2 text-[10px] font-mono tracking-wider font-bold hover:bg-neutral-700 text-white rounded-lg transition-all"
+                  className="bg-neutral-800 px-3 py-2 text-sm font-medium hover:bg-neutral-700 text-white rounded-lg transition-all"
                   style={{ cursor: 'pointer' }}
                 >
-                  JOIN
+                  Join
                 </button>
               </div>
             )}
-            <p className="text-[10px] text-neutral-500 font-mono">
-              Subscribe to unlock seasonal optician collaborations & limited drop notifications.
+            <p className="text-xs text-neutral-500">
+              Occasional notes on new frames and restocks.
             </p>
           </div>
         </div>
 
         <div className="w-full max-w-7xl mx-auto pt-8 flex flex-col sm:flex-row justify-between items-center text-[10px] font-mono text-neutral-600 space-y-4 sm:space-y-0">
           <div className="flex items-center gap-1.5">
-            <Check className="w-3.5 h-3.5 text-green-600" />
+
             <span>Optique Systems Inc. All Rights Reserved.</span>
           </div>
           <div className="flex gap-4">
@@ -416,10 +395,8 @@ export default function App() {
             <a href="#" className="hover:text-neutral-400">Carbon Statement</a>
             <a href="#" className="hover:text-neutral-400">Security Encryptions</a>
           </div>
-          <div>
-            <span>Engine: Three.js • GSAP ScrollTrigger • Tailwind CSS</span>
-          </div>
         </div>
+            
       </footer>
     </div>
   );

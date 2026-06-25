@@ -1,5 +1,5 @@
 import { Product, CustomizationState } from '../types';
-import { Star, Eye, ShoppingCart, ShieldCheck, CornerDownRight } from 'lucide-react';
+import { Star, Eye, ShoppingCart } from 'lucide-react';
 import SpectacleCardCanvas from './SpectacleCardCanvas';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -118,24 +118,23 @@ export default function ProductCollection({ onLoadPreset, onAddToCartDirectly }:
   return (
     <div className="w-full max-w-7xl mx-auto px-6 py-12 space-y-12" id="catalog-products-module">
       <div className="text-center space-y-3">
-        <span className="text-[10px] font-mono text-neutral-400 tracking-[0.2em] uppercase font-bold">
-          CURATED ARCHIVES
+        <span className="text-sm text-neutral-400">
+          Selected frames
         </span>
-        <h2 className="text-3xl sm:text-4xl font-sans tracking-tight font-extrabold text-white leading-none">
-          The <span className="font-light text-neutral-500">Bespoke Catalog</span>
+        <h2 className="text-3xl sm:text-4xl font-sans tracking-tight font-semibold text-white leading-none">
+          Shop the collection
         </h2>
-        <p className="text-xs sm:text-sm font-sans text-neutral-400 max-w-lg mx-auto leading-relaxed">
-          Pre-configured masterpieces representing iconic proportions, hand-picked by our Master Opticians. Edit in the 3D Customizer or buy directly.
+        <p className="text-sm font-sans text-neutral-400 max-w-lg mx-auto leading-relaxed">
+          A short edit of ready-to-wear frames. Try a shape in the customizer or add one directly to your bag.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
-        {curatedProducts.map((prod) => {
+      <div className="collection-stack w-full" aria-label="Curated eyewear collection">
+        {curatedProducts.map((prod, index) => {
             return (
               <div
                 key={prod.id}
-                className="bg-neutral-900/60 border border-neutral-850 rounded-3xl p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:border-[#b5a68e]/40 group relative overflow-hidden backdrop-blur-md"
-                style={{ zIndex: 5 }}
+                className={`collection-stack-card stack-card-${index + 1} bg-[#11110f]/85 border border-neutral-800 rounded-2xl p-5 flex flex-col justify-between group overflow-hidden backdrop-blur-sm`}
               >
                 {/* Product Info / Tag badges */}
                 <div className="space-y-4">
@@ -143,7 +142,7 @@ export default function ProductCollection({ onLoadPreset, onAddToCartDirectly }:
                     {prod.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="text-[8px] font-mono font-bold tracking-wider text-[#b5a68e] bg-[#b5a68e]/5 border border-[#b5a68e]/15 px-2 py-0.5 rounded-full"
+                        className="text-[10px] font-medium text-[#b5a68e] bg-[#b5a68e]/5 border border-[#b5a68e]/15 px-2 py-0.5 rounded-full"
                       >
                         {tag}
                       </span>
@@ -154,7 +153,7 @@ export default function ProductCollection({ onLoadPreset, onAddToCartDirectly }:
                     <h3 className="text-lg font-sans font-semibold text-white group-hover:text-[#b5a68e] transition-colors">
                       {prod.name}
                     </h3>
-                    <p className="text-[11px] font-mono text-neutral-400 capitalize">
+                    <p className="text-xs text-neutral-400 capitalize">
                       {getStyleLabel(prod.style)} × {getFrameColorLabel(prod.frameColor)}
                     </p>
                   </div>
@@ -199,7 +198,7 @@ export default function ProductCollection({ onLoadPreset, onAddToCartDirectly }:
                       style={{ cursor: 'pointer' }}
                     >
                       <Eye className="w-3.5 h-3.5" />
-                      <span>3D FOCUS</span>
+                      <span>Preview</span>
                     </button>
 
                     <button
@@ -208,7 +207,7 @@ export default function ProductCollection({ onLoadPreset, onAddToCartDirectly }:
                       style={{ cursor: 'pointer' }}
                     >
                       <ShoppingCart className="w-3.5 h-3.5" />
-                      <span>ADD TO BAG</span>
+                      <span>Add</span>
                     </button>
                   </div>
                 </div>
@@ -217,39 +216,7 @@ export default function ProductCollection({ onLoadPreset, onAddToCartDirectly }:
         })}
       </div>
 
-      {/* Brand values banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 bg-[#121213] rounded-3xl p-6 sm:p-8 text-neutral-100 border border-neutral-800 shadow-xl overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#b5a68e]/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="flex gap-4 items-start">
-          <ShieldCheck className="w-6 h-6 text-[#b5a68e] flex-shrink-0" />
-          <div className="space-y-1">
-            <h4 className="text-sm font-sans font-bold uppercase tracking-wider text-neutral-100">LIFETIME FRAME WARRANTY</h4>
-            <p className="text-[11px] text-neutral-400 leading-normal font-sans">
-              Our gold joints and hand joints elements are guaranteed for life. If they fail, we replace the entire eyewear frame immediately.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-4 items-start border-t sm:border-t-0 sm:border-l border-neutral-800 pt-5 sm:pt-0 sm:pl-6">
-          <CornerDownRight className="w-6 h-6 text-[#b5a68e] flex-shrink-0" />
-          <div className="space-y-1">
-            <h4 className="text-sm font-sans font-bold uppercase tracking-wider text-neutral-100">PRESCRIPTION ACCREDITED</h4>
-            <p className="text-[11px] text-neutral-400 leading-normal font-sans">
-              Upload prescription values or select custom anti-reflective single-vision filters with zero optical distortion.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-4 items-start border-t sm:border-t-0 sm:border-l border-neutral-800 pt-5 sm:pt-0 sm:pl-6">
-          <Star className="w-6 h-6 text-[#b5a68e] flex-shrink-0" />
-          <div className="space-y-1">
-            <h4 className="text-sm font-sans font-bold uppercase tracking-wider text-neutral-100">ECO-ENGRAVINGS ATELIER</h4>
-            <p className="text-[11px] text-neutral-400 leading-normal font-sans">
-              All cellulose waste generated during custom framing trim is recycled entirely to feed biomass heat furnaces.
-            </p>
-          </div>
-        </div>
-      </div>
+      <div className="h-36 sm:h-44" aria-hidden="true" />
     </div>
   );
 }

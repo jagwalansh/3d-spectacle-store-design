@@ -1,151 +1,173 @@
-import { Shield, Sparkles, Hammer, Cpu, ArrowRight } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default function TechHighlights() {
-  const [activeHighlight, setActiveHighlight] = useState<number>(0);
+  const [activeFeature, setActiveFeature] = useState(0);
+  const itemRefs = useRef<(HTMLElement | null)[]>([]);
 
   const features = [
     {
       title: 'Mazzucchelli Bio-Acetate',
       tag: 'CRAFT',
-      desc: 'Hand-sculpted cellulose acetate sourced from historical Italian ateliers. Entirely organic, skin-friendly, and displaying stunning depth of color or translucent depth of clarity.',
-      icon: Hammer,
+      desc: 'Italian cellulose acetate with a warm hand feel and visible depth through the frame.',
       highlightArea: 'Rims & Bridge',
-      metrics: '100% Biodegradable • High-Gloss Polish'
+      metrics: 'Plant-based acetate'
     },
     {
       title: 'Monoblock Gold-Gilded Hinges',
       tag: 'ENGINEERING',
-      desc: 'Five-barrel steel hinges dipped in absolute 18k Champagne Gold or clean Platinum finish. Hand-pressed flush rivets anchor the temples with zero slop for lifelong structural integrity.',
-      icon: Cpu,
+      desc: 'Five-barrel hinges with a firm open and close, fitted flush into the temple.',
       highlightArea: 'Temples connection',
-      metrics: '50,000 Scroll Action Certified'
+      metrics: 'Five-barrel steel'
     },
     {
       title: 'Zeiss Protective Lens Coating',
       tag: 'OPTICS',
-      desc: 'Custom-developed premium lenses fitted with precise anti-reflective coatings. Suppresses 99.8% of blue-light pollution while maintaining flawless crystal-clear color fidelity.',
-      icon: Shield,
+      desc: 'Clear protective lenses with anti-reflective coating for everyday indoor and outdoor use.',
       highlightArea: 'Lens interiors',
-      metrics: 'Polarized UV400 • Double-Sided Anti-Scratch'
+      metrics: 'UV400 coating'
     },
     {
       title: 'Exposed Core Engraving',
       tag: 'BESPOKE DESIGN',
-      desc: 'A physical gold-foil metallic spline running straight through translucent acetate limbs. Adorned with delicate laser-etched linework which catches sunlight on every gaze.',
-      icon: Sparkles,
+      desc: 'A visible inner wire can be engraved for initials, dates, or a short line of text.',
       highlightArea: 'Inner temples',
-      metrics: 'Custom text etching enabled'
+      metrics: 'Optional engraving'
     }
   ];
 
+  const scrollToDesignLab = () => {
+    const customizer = document.getElementById('customizer-trigger');
+    if (!customizer) return;
+
+    const trigger = ScrollTrigger.getAll().find((st) => st.trigger === customizer);
+    if (trigger) {
+      window.scrollTo({
+        top: trigger.start + (trigger.end - trigger.start) * 0.53,
+        behavior: 'smooth',
+      });
+      return;
+    }
+
+    customizer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  useEffect(() => {
+    let animationFrame = 0;
+
+    const updateCenteredFeature = () => {
+      const viewportCenter = window.innerHeight / 2;
+      let closestIndex = 0;
+      let closestDistance = Number.POSITIVE_INFINITY;
+
+      itemRefs.current.forEach((item, index) => {
+        if (!item) return;
+
+        const rect = item.getBoundingClientRect();
+        const itemCenter = rect.top + rect.height / 2;
+        const distance = Math.abs(itemCenter - viewportCenter);
+
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
+      });
+
+      setActiveFeature(closestIndex);
+    };
+
+    const requestUpdate = () => {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(updateCenteredFeature);
+    };
+
+    updateCenteredFeature();
+    window.addEventListener('scroll', requestUpdate, { passive: true });
+    window.addEventListener('resize', requestUpdate);
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      window.removeEventListener('scroll', requestUpdate);
+      window.removeEventListener('resize', requestUpdate);
+    };
+  }, []);
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch w-full max-w-7xl mx-auto px-6 py-6" id="tech-highlights-module">
-      {/* Main content column on the left (col-span-6) */}
-      <div className="lg:col-span-6 flex flex-col justify-start gap-6">
-        <div className="space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#b5a68e]/10 border border-[#b5a68e]/25 text-xs font-mono text-[#b5a68e] font-bold">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>OPTICAL PATENTS</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-sans tracking-tight font-extralight text-white leading-tight">
-            Meticulously Sculpted. <br />
-            <span className="font-semibold text-[#b5a68e]">Technically Perfected.</span>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start w-full max-w-7xl mx-auto px-6 py-6" id="tech-highlights-module">
+      <div className="lg:col-span-6 flex flex-col justify-start gap-10">
+        <div className="space-y-4 max-w-xl">
+          <span className="text-sm text-[#b5a68e]">Materials and finish</span>
+          <h2 className="text-3xl sm:text-4xl font-sans tracking-tight font-light text-white leading-tight">
+            Made with fewer parts,
+            <span className="block text-neutral-400">finished with more care.</span>
           </h2>
-          <p className="text-sm font-sans text-neutral-400 leading-relaxed">
-            Every millimeter of our eyewear represents hundreds of hours of design refinement, fusing Italian premium heritage craft with modern high-performance physics.
+          <p className="text-base font-sans text-neutral-400 leading-relaxed max-w-lg">
+            The frame keeps the construction visible: acetate, hinge, lens, and temple wire. Scroll through the details before moving into the customizer.
           </p>
         </div>
 
-        {/* Compact grid selectors */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {features.map((feat, i) => {
-            const Icon = feat.icon;
-            const isActive = activeHighlight === i;
+        <div className="divide-y divide-neutral-800/70 border-y border-neutral-800/70">
+          {features.map((feat, index) => {
+            const isActive = activeFeature === index;
 
             return (
-              <button
+              <article
                 key={feat.title}
-                onClick={() => setActiveHighlight(i)}
-                className={`text-left p-3.5 rounded-2xl border transition-all duration-300 flex items-center gap-3 ${
+                ref={(element) => {
+                  itemRefs.current[index] = element;
+                }}
+                data-index={index}
+                className={`py-7 transition-all duration-500 ${
                   isActive
-                    ? 'bg-neutral-800 border-[#b5a68e]/50 text-white shadow-md'
-                    : 'bg-neutral-900/40 border-neutral-800 text-neutral-400 hover:bg-neutral-800/50 hover:border-neutral-700 hover:text-white'
+                    ? 'opacity-100 blur-0 translate-x-0'
+                    : 'opacity-25 blur-[8px] translate-x-1'
                 }`}
-                style={{ cursor: 'pointer' }}
               >
-                <div className={`p-2 rounded-xl transition-all ${
-                  isActive ? 'bg-white/10 text-white' : 'bg-neutral-950 text-neutral-500'
-                }`}>
-                  <Icon className="w-4 h-4" />
+                <div className="min-w-0">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <div>
+                      <p className="text-xs text-neutral-600">{feat.tag}</p>
+                      <h3 className="text-xl font-medium text-white mt-1">{feat.title}</h3>
+                    </div>
+                    <span className="text-xs text-neutral-600">0{index + 1}</span>
+                  </div>
+
+                  <p className="mt-3 text-base text-neutral-400 leading-relaxed">
+                    {feat.desc}
+                  </p>
+
+                  <div className="mt-5 grid grid-cols-2 gap-6 text-sm">
+                    <div>
+                      <span className="text-neutral-600 block">Part</span>
+                      <span className="text-neutral-300 mt-1 block">
+                        {feat.highlightArea}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-neutral-600 block">Finish</span>
+                      <span className="text-[#b5a68e] mt-1 block">
+                        {feat.metrics}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-0.5 min-w-0">
-                  <span className="text-[8px] font-mono tracking-widest font-bold text-[#b5a68e] uppercase block truncate">
-                    {feat.tag}
-                  </span>
-                  <h3 className={`text-xs font-sans font-semibold truncate ${isActive ? 'text-white' : 'text-neutral-300'}`}>
-                    {feat.title}
-                  </h3>
-                </div>
-              </button>
+              </article>
             );
           })}
         </div>
 
-        {/* Detailed Profile container on the left bottom */}
-        <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-5 sm:p-6 flex flex-col justify-between shadow-lg relative overflow-hidden backdrop-blur-md">
-          <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:24px_24px] opacity-25 pointer-events-none" />
-
-          <div className="space-y-4 relative z-10">
-            <div className="flex justify-between items-start border-b border-neutral-850 pb-3">
-              <h4 className="text-lg font-sans font-bold text-white">
-                {features[activeHighlight].title}
-              </h4>
-              <span className="text-2xl font-mono text-neutral-800 font-extrabold tracking-tighter">
-                0{activeHighlight + 1}
-              </span>
-            </div>
-
-            <p className="text-xs sm:text-sm font-sans text-neutral-300 leading-relaxed font-light">
-              {features[activeHighlight].desc}
-            </p>
-
-            <div className="grid grid-cols-2 gap-3 bg-neutral-950/60 rounded-xl p-3 border border-neutral-800 shadow-sm">
-              <div>
-                <span className="text-[9px] font-mono text-neutral-500 block uppercase">Component Target</span>
-                <span className="text-xs font-mono font-medium text-neutral-300 mt-0.5">
-                  {features[activeHighlight].highlightArea}
-                </span>
-              </div>
-              <div>
-                <span className="text-[9px] font-mono text-neutral-500 block uppercase">Material Grade</span>
-                <span className="text-xs font-mono font-semibold text-[#b5a68e] mt-0.5">
-                  {features[activeHighlight].metrics}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-5 pt-3 border-t border-neutral-850 flex items-center justify-between relative z-10">
-            <p className="text-[9px] font-mono text-neutral-500">
-              Observe real-time highlights updates as you toggle options.
-            </p>
-            <button 
-              onClick={() => {
-                const customizer = document.getElementById('customizer-trigger');
-                if (customizer) customizer.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="flex items-center gap-1.5 text-xs font-mono text-[#b5a68e] font-bold hover:gap-2.5 transition-all"
-              style={{ cursor: 'pointer' }}
-            >
-              <span>DESIGN LAB</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+        <div className="pt-2">
+          <button
+            onClick={scrollToDesignLab}
+            className="flex items-center gap-2 border-b border-[#b5a68e]/50 pb-2 text-sm text-[#b5a68e] font-medium hover:gap-3 transition-all"
+            style={{ cursor: 'pointer' }}
+          >
+            <span>Customize your frame</span>
+            <span aria-hidden="true">→</span>
+          </button>
         </div>
       </div>
 
-      {/* Spacer right column completely empty so the 3D spectacles can land here cleanly on scroll! */}
       <div className="lg:col-span-6 hidden lg:block h-[500px]" />
     </div>
   );

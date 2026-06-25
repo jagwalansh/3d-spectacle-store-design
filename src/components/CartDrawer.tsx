@@ -64,7 +64,7 @@ export default function CartDrawer({
     e.preventDefault();
     setValidationError('');
     if (!customerInfo.name || !customerInfo.email || !customerInfo.address) {
-      setValidationError('Please fill out all billing and delivery coordinates.');
+      setValidationError('Please fill out all billing and delivery details.');
       return;
     }
     setCheckoutStep('success');
@@ -107,8 +107,8 @@ export default function CartDrawer({
             <div className="p-6 border-b border-neutral-800 bg-[#121213] flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <ShoppingBag className="w-5 h-5 text-[#b5a68e]" />
-                <h3 className="text-base font-sans font-bold tracking-wider text-white uppercase">
-                  ATELIER BAG ({cartItems.length})
+                <h3 className="text-base font-sans font-semibold text-white">
+                  Cart ({cartItems.length})
                 </h3>
               </div>
               <button
@@ -127,15 +127,14 @@ export default function CartDrawer({
                   <Sparkles className="w-8 h-8 text-[#b5a68e]" />
                 </div>
                 <div className="space-y-2">
-                  <span className="text-[10px] font-mono tracking-widest text-[#b5a68e] uppercase font-bold">
-                    TRANSACTION LICENSED
+                  <span className="text-xs text-[#b5a68e] font-medium">
+                    Order received
                   </span>
                   <h3 className="text-2xl font-sans font-extralight text-white">
-                    Your Spectacles <br />
-                    Are <span className="font-semibold text-[#b5a68e]">In Construction</span>
+                    Your frame is <span className="font-semibold text-[#b5a68e]">being prepared</span>
                   </h3>
                   <p className="text-xs font-sans text-neutral-300 leading-relaxed max-w-xs mx-auto">
-                    We have registered your bespoke frames customization sequence. A confirmation invoice has been sent to <span className="font-semibold">{customerInfo.email}</span>.
+                    A confirmation has been sent to <span className="font-semibold">{customerInfo.email}</span>.
                   </p>
                 </div>
 
@@ -145,30 +144,30 @@ export default function CartDrawer({
                     <span className="font-bold text-white">#OP-{Math.floor(100000 + Math.random() * 900000)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Atelier Handcraft:</span>
-                    <span>Active Queue (Rank #4)</span>
+                    <span>Status:</span>
+                    <span>Preparing order</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Dispatch Carrier:</span>
-                    <span>FedEx Priority Priority Air</span>
+                    <span>Shipping:</span>
+                    <span>FedEx Priority</span>
                   </div>
                 </div>
 
                 <button
                   onClick={handleCompleteOrder}
-                  className="w-full py-4 bg-[#b5a68e] text-neutral-950 hover:bg-[#b5a68e]/90 rounded-xl transition-all text-xs font-mono uppercase tracking-wider font-bold"
+                  className="w-full py-4 bg-[#b5a68e] text-neutral-950 hover:bg-[#b5a68e]/90 rounded-xl transition-all text-sm font-semibold"
                   style={{ cursor: 'pointer' }}
                 >
-                  DISMISS INVOICE
+                  Done
                 </button>
               </div>
             ) : isCheckingOut ? (
               /* CHECKOUT BILLING DETAIL SCREEN */
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 <div className="space-y-1">
-                  <span className="text-[10px] font-mono uppercase text-[#b5a68e] tracking-widest block font-bold">STEP 02 / 02</span>
-                  <h4 className="text-lg font-sans font-bold text-white">Billing & Delivery coordinates</h4>
-                  <p className="text-xs font-sans text-neutral-400 font-light">Please provide delivery address coordinates to verify the handcraft shipment queue.</p>
+                  <span className="text-xs text-[#b5a68e] block font-medium">Checkout</span>
+                  <h4 className="text-lg font-sans font-bold text-white">Billing and delivery</h4>
+                  <p className="text-xs font-sans text-neutral-400 font-light">Enter your delivery details to complete the order.</p>
                 </div>
 
                 <form onSubmit={handleCheckoutSubmit} className="space-y-4">
@@ -228,7 +227,7 @@ export default function CartDrawer({
 
                   <div className="border-t border-neutral-800 pt-4 mt-6">
                     <div className="flex justify-between items-center py-2.5 text-xs font-mono text-neutral-400">
-                      <span>SECURE CREDIT TRANSIT:</span>
+                      <span>Payment card:</span>
                       <span className="flex items-center gap-1 font-bold text-white">
                         <CreditCard className="w-3.5 h-3.5 text-[#b5a68e]" />
                         •••• •••• •••• 4026
@@ -241,14 +240,14 @@ export default function CartDrawer({
                         onClick={() => setIsCheckingOut(false)}
                         className="w-1/3 py-3 rounded-xl border border-neutral-800 text-xs font-mono text-neutral-400 hover:bg-neutral-900"
                       >
-                        BACK
+                        Back
                       </button>
                       <button
                         type="submit"
-                        className="w-2/3 py-3 bg-[#b5a68e] hover:bg-[#b5a68e]/90 text-neutral-950 rounded-xl text-xs font-mono uppercase tracking-widest font-bold flex items-center justify-center gap-2"
+                        className="w-2/3 py-3 bg-[#b5a68e] hover:bg-[#b5a68e]/90 text-neutral-950 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
                       >
                         <ShieldCheck className="w-4 h-4 text-neutral-950" />
-                        <span>CONFIRM ${getTotal()}</span>
+                        <span>Confirm ${getTotal()}</span>
                       </button>
                     </div>
                   </div>
