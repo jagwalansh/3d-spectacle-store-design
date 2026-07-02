@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 interface SpectacleCardCanvasProps {
@@ -10,9 +10,37 @@ interface SpectacleCardCanvasProps {
 export default function SpectacleCardCanvas({ style, frameColor, lensColor }: SpectacleCardCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isVisibleRef = useRef(false);
+  const [hasEnteredView, setHasEnteredView] = useState(false);
+  const [hasWebGLError, setHasWebGLError] = useState(false);
 
   useEffect(() => {
-    if (!canvasRef.current || !containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (!('IntersectionObserver' in window)) {
+      isVisibleRef.current = true;
+      setHasEnteredView(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisibleRef.current = entry.isIntersecting;
+        if (entry.isIntersecting) {
+          setHasEnteredView(true);
+        }
+      },
+      { rootMargin: '240px 0px', threshold: 0.01 }
+    );
+
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (hasWebGLError || !hasEnteredView || !canvasRef.current || !containerRef.current) return;
 
     const width = containerRef.current.clientWidth || 250;
     const height = containerRef.current.clientHeight || 112;
@@ -26,13 +54,24 @@ export default function SpectacleCardCanvas({ style, frameColor, lensColor }: Sp
     camera.position.set(0, 0, 5.0);
 
     // 3. Renderer Setup
-    const renderer = new THREE.WebGLRenderer({
-      canvas: canvasRef.current,
-      alpha: true,
-      antialias: true
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvasRef.current,
+        alpha: true,
+        antialias: true,
+        powerPreference: 'low-power'
+      });
+    } catch (error) {
+      console.warn('WebGL is unavailable for the product card preview.', error);
+      setHasWebGLError(true);
+      return;
+    }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
     renderer.setSize(width, height);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
 
     // 4. Lighting
     const ambientLight = new THREE.AmbientLight('#ffffff', 1.2);
@@ -321,6 +360,8 @@ export default function SpectacleCardCanvas({ style, frameColor, lensColor }: Sp
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
+      if (!isVisibleRef.current || document.hidden) return;
+
       const elapsedTime = clock.getElapsedTime();
 
       // Slow elegant 3D rotation
@@ -339,6 +380,7 @@ export default function SpectacleCardCanvas({ style, frameColor, lensColor }: Sp
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
     };
 
     window.addEventListener('resize', handleResize);
@@ -360,7 +402,7 @@ export default function SpectacleCardCanvas({ style, frameColor, lensColor }: Sp
         }
       });
     };
-  }, [style, frameColor, lensColor]);
+  }, [hasEnteredView, style, frameColor, lensColor]);
 
   return (
     <div ref={containerRef} className="w-full h-full relative">

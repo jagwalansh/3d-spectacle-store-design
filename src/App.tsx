@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { Suspense, lazy, useState, useEffect } from 'react';
 import { CustomizationState, CartItem, Product } from './types';
-import SpecsCanvas from './components/SpecsCanvas';
 import Navbar from './components/Navbar';
 import TechHighlights from './components/TechHighlights';
 import CustomizerSection from './components/CustomizerSection';
@@ -9,6 +8,8 @@ import CartDrawer from './components/CartDrawer';
 import DotField from './components/DotField';
 import { Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+
+const SpecsCanvas = lazy(() => import('./components/SpecsCanvas'));
 
 export default function App() {
   // Shared state: Customization Config
@@ -31,24 +32,27 @@ export default function App() {
   // Loading animation states
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [isSceneReady, setIsSceneReady] = useState(false);
 
-  // Timed progress simulation
   useEffect(() => {
-    let current = 0;
-    const interval = setInterval(() => {
-      current += Math.floor(Math.random() * 8) + 3;
-      if (current >= 100) {
-        current = 100;
-        clearInterval(interval);
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 550);
-      }
-      setLoadingProgress(current);
-    }, 60);
+    if (isSceneReady) {
+      setLoadingProgress(100);
+      const finishTimer = window.setTimeout(() => {
+        setIsLoading(false);
+      }, 420);
 
-    return () => clearInterval(interval);
-  }, []);
+      return () => window.clearTimeout(finishTimer);
+    }
+
+    const progressTimer = window.setInterval(() => {
+      setLoadingProgress((current) => {
+        const step = current < 55 ? 8 : current < 82 ? 3 : 1;
+        return Math.min(92, current + step);
+      });
+    }, 90);
+
+    return () => window.clearInterval(progressTimer);
+  }, [isSceneReady]);
 
   // Newsletter subscription
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -187,10 +191,13 @@ export default function App() {
       </AnimatePresence>
 
       {/* 3D Model Render Engine - Canvas resides fixed in background, controlled by scrolling */}
-      <SpecsCanvas
-        customization={customization}
-        onScrollSectionChange={setActiveSection}
-      />
+      <Suspense fallback={null}>
+        <SpecsCanvas
+          customization={customization}
+          onScrollSectionChange={setActiveSection}
+          onReady={() => setIsSceneReady(true)}
+        />
+      </Suspense>
 
       {/* Floating Header Navbar */}
       <Navbar
@@ -250,8 +257,8 @@ export default function App() {
               <span className="text-sm text-[#b5a68e]">
                 
               </span>
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-sans mr-40 leading-[0.95] tracking-wider text-[#b5a68e]">
-                Opitque
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-sans leading-[0.95] tracking-wider text-[#b5a68e]">
+                Optique
               </h2>
             </div>
 

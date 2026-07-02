@@ -10,9 +10,103 @@ gsap.registerPlugin(ScrollTrigger);
 interface SpecsCanvasProps {
   customization: CustomizationState;
   onScrollSectionChange?: (section: string) => void;
+  onReady?: () => void;
 }
 
-export default function SpecsCanvas({ customization, onScrollSectionChange }: SpecsCanvasProps) {
+type SpectacleStyle = CustomizationState['style'];
+
+const MAIN_CANVAS_DPR = 1.5;
+
+const FRAME_COLORS: Record<string, { hex: string; transmission: number; opacity: number; roughness: number; metalness: number }> = {
+  'matte-black': { hex: '#16161a', transmission: 0.0, opacity: 1.0, roughness: 0.85, metalness: 0.08 },
+  'champagne-crystal': { hex: '#eedbb0', transmission: 0.92, opacity: 0.64, roughness: 0.1, metalness: 0.04 },
+  'polished-amber': { hex: '#d97706', transmission: 0.42, opacity: 0.9, roughness: 0.18, metalness: 0.04 },
+  'rose-acetate': { hex: '#fda4af', transmission: 0.78, opacity: 0.74, roughness: 0.16, metalness: 0.04 },
+  'pure-gold': { hex: '#d4af37', transmission: 0.0, opacity: 1.0, roughness: 0.22, metalness: 0.94 },
+  'platinum': { hex: '#e2e8f0', transmission: 0.0, opacity: 1.0, roughness: 0.16, metalness: 0.88 }
+};
+
+const LENS_COLORS: Record<string, { hex: string; transmission: number; opacity: number; roughness: number; metalness: number }> = {
+  'solar-charcoal': { hex: '#0f172a', transmission: 0.48, opacity: 0.86, roughness: 0.04, metalness: 0.12 },
+  'blue-block': { hex: '#38bdf8', transmission: 0.84, opacity: 0.58, roughness: 0.025, metalness: 0.22 },
+  'sunset-gold': { hex: '#f59e0b', transmission: 0.62, opacity: 0.76, roughness: 0.04, metalness: 0.45 },
+  'forest-ocean': { hex: '#0d9488', transmission: 0.68, opacity: 0.8, roughness: 0.04, metalness: 0.2 }
+};
+
+const getCachedGeometry = (
+  cache: Map<string, THREE.BufferGeometry>,
+  key: string,
+  build: () => THREE.BufferGeometry
+) => {
+  const cached = cache.get(key);
+  if (cached) return cached;
+
+  const geometry = build();
+  geometry.userData.cached = true;
+  cache.set(key, geometry);
+  return geometry;
+};
+
+const getLensCurveBounds = (style: SpectacleStyle) => {
+  if (style === 'round') return { rx: 0.82, ry: 0.82 };
+  if (style === 'rectangular') return { rx: 1.02, ry: 0.62 };
+  return { rx: 0.98, ry: 0.92 };
+};
+
+const addSubtleLensCurve = (geometry: THREE.BufferGeometry, centerX: number, style: SpectacleStyle) => {
+  const position = geometry.getAttribute('position') as THREE.BufferAttribute | undefined;
+  if (!position) return;
+
+  const { rx, ry } = getLensCurveBounds(style);
+  for (let i = 0; i < position.count; i += 1) {
+    const localX = (position.getX(i) - centerX) / rx;
+    const localY = position.getY(i) / ry;
+    const falloff = Math.max(0, 1 - (localX * localX + localY * localY));
+    position.setZ(i, position.getZ(i) + falloff * 0.045);
+  }
+
+  position.needsUpdate = true;
+  geometry.computeVertexNormals();
+};
+
+const createTortoiseTexture = () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 96;
+  canvas.height = 96;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  const gradient = ctx.createLinearGradient(0, 0, 96, 96);
+  gradient.addColorStop(0, '#6b2f0d');
+  gradient.addColorStop(0.45, '#d97706');
+  gradient.addColorStop(1, '#241007');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 96, 96);
+
+  for (let i = 0; i < 52; i += 1) {
+    const x = Math.random() * 96;
+    const y = Math.random() * 96;
+    const r = 5 + Math.random() * 18;
+    const spot = ctx.createRadialGradient(x, y, 0, x, y, r);
+    spot.addColorStop(0, Math.random() > 0.48 ? 'rgba(255, 215, 146, 0.42)' : 'rgba(22, 10, 5, 0.6)');
+    spot.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = spot;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1.8, 1.8);
+  texture.anisotropy = 4;
+  return texture;
+};
+
+export default function SpecsCanvas({ customization, onScrollSectionChange, onReady }: SpecsCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -26,48 +120,62 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
   const frameMaterialRef = useRef<THREE.MeshPhysicalMaterial | null>(null);
   const lensMaterialRef = useRef<THREE.MeshPhysicalMaterial | null>(null);
   const hingeMaterialRef = useRef<THREE.MeshStandardMaterial | null>(null);
+  const nosePadMaterialRef = useRef<THREE.MeshPhysicalMaterial | null>(null);
+  const geometryCacheRef = useRef(new Map<string, THREE.BufferGeometry>());
+  const tortoiseTextureRef = useRef<THREE.CanvasTexture | null>(null);
   const specsGroupRef = useRef<THREE.Group | null>(null);
   const glassesGroupRef = useRef<THREE.Group | null>(null); // holds dynamic parts
   const caseGroupRef = useRef<THREE.Group | null>(null);
   const lidPivotRef = useRef<THREE.Group | null>(null);
   const stageGroupRef = useRef<THREE.Group | null>(null);
+  const onReadyRef = useRef(onReady);
+  const hasReportedReadyRef = useRef(false);
 
   // State to track loaded / ready status
   const [isReady, setIsReady] = useState(false);
+  const [hasWebGLError, setHasWebGLError] = useState(false);
+
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
 
   // Re-generate geometry when style changes
   useEffect(() => {
     if (!glassesGroupRef.current) return;
 
-    // Clear previous geometries/meshes from glassesGroup
+    // Clear previous meshes. Cached geometries and shared materials are disposed on full unmount.
     while (glassesGroupRef.current.children.length > 0) {
       const obj = glassesGroupRef.current.children[0];
       glassesGroupRef.current.remove(obj);
-      // Recursively dispose geometries and materials
+
       obj.traverse((child) => {
         if (child instanceof THREE.Mesh) {
-          child.geometry.dispose();
-          if (Array.isArray(child.material)) {
-            child.material.forEach((m) => m.dispose());
-          } else {
-            child.material.dispose();
+          if (!child.geometry.userData.cached) {
+            child.geometry.dispose();
           }
         }
       });
     }
 
-    // Colors mapping from customization properties
     const style = customization.style;
-    const isGoldHinge = customization.hingeGold;
+    const cache = geometryCacheRef.current;
 
     // Materials
     const frameMaterial = frameMaterialRef.current || new THREE.MeshPhysicalMaterial();
     const lensMaterial = lensMaterialRef.current || new THREE.MeshPhysicalMaterial();
     const hingeMaterial = hingeMaterialRef.current || new THREE.MeshStandardMaterial();
+    const nosePadMaterial = nosePadMaterialRef.current || new THREE.MeshPhysicalMaterial({
+      color: '#f4f1eb',
+      roughness: 0.18,
+      metalness: 0,
+      transmission: 0.72,
+      opacity: 0.46,
+      transparent: true,
+      thickness: 0.28,
+      ior: 1.42
+    });
 
-    hingeMaterial.color.set(isGoldHinge ? '#dfb76c' : '#c0c0c0');
-    hingeMaterial.metalness = 0.9;
-    hingeMaterial.roughness = 0.15;
+    nosePadMaterialRef.current = nosePadMaterial;
 
     // Create Left and Right eye frame shapes in x, y coordinate space
     const leftFrameShape = new THREE.Shape();
@@ -235,19 +343,26 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
     const extrudeSettings = {
       depth: 0.14,
       bevelEnabled: true,
-      bevelSegments: 4,
+      bevelSegments: 3,
       steps: 1,
       bevelSize: 0.03,
-      bevelThickness: 0.03
+      bevelThickness: 0.03,
+      curveSegments: 24
     };
 
     // Frame meshes
-    const leftFrameGeom = new THREE.ExtrudeGeometry(leftFrameShape, extrudeSettings);
-    const rightFrameGeom = new THREE.ExtrudeGeometry(rightFrameShape, extrudeSettings);
-    
-    // Recenter frame depth origin so scaling is beautifully centered
-    leftFrameGeom.center();
-    rightFrameGeom.center();
+    const leftFrameGeom = getCachedGeometry(cache, `${style}-left-frame`, () => {
+      const geometry = new THREE.ExtrudeGeometry(leftFrameShape, extrudeSettings);
+      geometry.center();
+      geometry.computeVertexNormals();
+      return geometry;
+    });
+    const rightFrameGeom = getCachedGeometry(cache, `${style}-right-frame`, () => {
+      const geometry = new THREE.ExtrudeGeometry(rightFrameShape, extrudeSettings);
+      geometry.center();
+      geometry.computeVertexNormals();
+      return geometry;
+    });
 
     const leftFrameMesh = new THREE.Mesh(leftFrameGeom, frameMaterial);
     const rightFrameMesh = new THREE.Mesh(rightFrameGeom, frameMaterial);
@@ -272,7 +387,7 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
         new THREE.Vector3(0, 0.54, 0.05),
         new THREE.Vector3(0.48, 0.52, 0.05)
       ]);
-      const bridgeTopGeom = new THREE.TubeGeometry(bridgeTopCurve, 16, 0.04 * (customization.transmissionType === 'matte' ? 1.4 : 1.0), 8, false);
+      const bridgeTopGeom = getCachedGeometry(cache, `${style}-${customization.transmissionType}-bridge-top`, () => new THREE.TubeGeometry(bridgeTopCurve, 12, 0.04 * (customization.transmissionType === 'matte' ? 1.35 : 1.0), 8, false));
       const topBridgeMesh = new THREE.Mesh(bridgeTopGeom, hingeMaterial);
       glassesGroupRef.current.add(topBridgeMesh);
 
@@ -281,18 +396,17 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
         new THREE.Vector3(0, 0.16, 0.08),
         new THREE.Vector3(0.46, 0.12, 0.05)
       ]);
-      const bridgeBottomGeom = new THREE.TubeGeometry(bridgeBottomCurve, 16, 0.052, 8, false);
+      const bridgeBottomGeom = getCachedGeometry(cache, `${style}-bridge-bottom`, () => new THREE.TubeGeometry(bridgeBottomCurve, 12, 0.052, 8, false));
       const bottomBridgeMesh = new THREE.Mesh(bridgeBottomGeom, frameMaterial);
       glassesGroupRef.current.add(bottomBridgeMesh);
     } else {
       // Standard Bridge
-      const bridgeLength = customization.style === 'round' ? 0.38 : 0.28;
       const bridgeCurve = new THREE.CatmullRomCurve3([
         new THREE.Vector3(-0.4, 0.12, 0.03),
         new THREE.Vector3(0, 0.22, 0.09),
         new THREE.Vector3(0.4, 0.12, 0.03)
       ]);
-      const bridgeGeom = new THREE.TubeGeometry(bridgeCurve, 20, 0.065, 8, false);
+      const bridgeGeom = getCachedGeometry(cache, `${style}-bridge`, () => new THREE.TubeGeometry(bridgeCurve, 16, 0.065, 8, false));
       const bridgeMesh = new THREE.Mesh(bridgeGeom, frameMaterial);
       bridgeMesh.castShadow = true;
       glassesGroupRef.current.add(bridgeMesh);
@@ -304,15 +418,32 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
           new THREE.Vector3(0, 0.22, 0.085),
           new THREE.Vector3(0.4, 0.12, 0.03)
         ]);
-        const coreGeom = new THREE.TubeGeometry(coreCurve, 20, 0.02, 6, false);
+        const coreGeom = getCachedGeometry(cache, `${style}-bridge-core`, () => new THREE.TubeGeometry(coreCurve, 14, 0.02, 6, false));
         const coreMesh = new THREE.Mesh(coreGeom, hingeMaterial);
         glassesGroupRef.current.add(coreMesh);
       }
     }
 
-    // Creating highly detailed Lenses
-    const lensShapeGeomLeft = new THREE.ShapeGeometry(leftLensShape);
-    const lensShapeGeomRight = new THREE.ShapeGeometry(rightLensShape);
+    // Slightly domed lenses read more like real optics than flat panes.
+    const lensExtrudeSettings = {
+      depth: 0.032,
+      bevelEnabled: true,
+      bevelSegments: 2,
+      steps: 1,
+      bevelSize: 0.012,
+      bevelThickness: 0.012,
+      curveSegments: 20
+    };
+    const lensShapeGeomLeft = getCachedGeometry(cache, `${style}-left-lens`, () => {
+      const geometry = new THREE.ExtrudeGeometry(leftLensShape, lensExtrudeSettings);
+      addSubtleLensCurve(geometry, -eyeSpacing, style);
+      return geometry;
+    });
+    const lensShapeGeomRight = getCachedGeometry(cache, `${style}-right-lens`, () => {
+      const geometry = new THREE.ExtrudeGeometry(rightLensShape, lensExtrudeSettings);
+      addSubtleLensCurve(geometry, eyeSpacing, style);
+      return geometry;
+    });
 
     const leftLensMesh = new THREE.Mesh(lensShapeGeomLeft, lensMaterial);
     const rightLensMesh = new THREE.Mesh(lensShapeGeomRight, lensMaterial);
@@ -328,9 +459,12 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
     const hingeLeftPos = style === 'round' ? -2.24 : style === 'rectangular' ? -2.42 : -2.32;
     const hingeRightPos = style === 'round' ? 2.24 : style === 'rectangular' ? 2.42 : 2.32;
 
-    const hingeGeom = new THREE.BoxGeometry(0.08, 0.12, 0.15);
-    const metalAccentGeom = new THREE.CylinderGeometry(0.04, 0.04, 0.12, 8);
-    metalAccentGeom.rotateX(Math.PI / 2);
+    const hingeGeom = getCachedGeometry(cache, 'hinge-box', () => new THREE.BoxGeometry(0.08, 0.12, 0.15));
+    const metalAccentGeom = getCachedGeometry(cache, 'front-pin-cylinder', () => {
+      const geometry = new THREE.CylinderGeometry(0.04, 0.04, 0.12, 8);
+      geometry.rotateX(Math.PI / 2);
+      return geometry;
+    });
 
     const leftHinge = new THREE.Mesh(hingeGeom, hingeMaterial);
     leftHinge.position.set(hingeLeftPos - 0.05, 0.08, -0.05);
@@ -348,6 +482,52 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
     const rightPin = new THREE.Mesh(metalAccentGeom, hingeMaterial);
     rightPin.position.set(hingeRightPos, 0.08, 0.08);
     glassesGroupRef.current.add(rightPin);
+
+    const screwGeom = getCachedGeometry(cache, 'hinge-screw-head', () => {
+      const geometry = new THREE.CylinderGeometry(0.024, 0.024, 0.018, 10);
+      geometry.rotateX(Math.PI / 2);
+      return geometry;
+    });
+
+    [-0.035, 0.035].forEach((offsetY) => {
+      const screwLeft = new THREE.Mesh(screwGeom, hingeMaterial);
+      screwLeft.position.set(hingeLeftPos, 0.08 + offsetY, 0.165);
+      glassesGroupRef.current?.add(screwLeft);
+
+      const screwRight = new THREE.Mesh(screwGeom, hingeMaterial);
+      screwRight.position.set(hingeRightPos, 0.08 + offsetY, 0.165);
+      glassesGroupRef.current?.add(screwRight);
+    });
+
+    const padArmCurveLeft = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.18, -0.04, 0.06),
+      new THREE.Vector3(-0.26, -0.16, 0.16),
+      new THREE.Vector3(-0.34, -0.26, 0.2)
+    ]);
+    const padArmCurveRight = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0.18, -0.04, 0.06),
+      new THREE.Vector3(0.26, -0.16, 0.16),
+      new THREE.Vector3(0.34, -0.26, 0.2)
+    ]);
+    const leftPadArmGeom = getCachedGeometry(cache, `${style}-left-pad-arm`, () => new THREE.TubeGeometry(padArmCurveLeft, 8, 0.012, 6, false));
+    const rightPadArmGeom = getCachedGeometry(cache, `${style}-right-pad-arm`, () => new THREE.TubeGeometry(padArmCurveRight, 8, 0.012, 6, false));
+    glassesGroupRef.current.add(new THREE.Mesh(leftPadArmGeom, hingeMaterial));
+    glassesGroupRef.current.add(new THREE.Mesh(rightPadArmGeom, hingeMaterial));
+
+    const nosePadGeom = getCachedGeometry(cache, 'soft-clear-nose-pad', () => new THREE.SphereGeometry(0.16, 12, 8));
+    const leftNosePad = new THREE.Mesh(nosePadGeom, nosePadMaterial);
+    leftNosePad.position.set(-0.36, -0.32, 0.23);
+    leftNosePad.rotation.set(0.28, 0.18, -0.32);
+    leftNosePad.scale.set(0.64, 1.05, 0.28);
+    leftNosePad.renderOrder = 2;
+    glassesGroupRef.current.add(leftNosePad);
+
+    const rightNosePad = new THREE.Mesh(nosePadGeom, nosePadMaterial);
+    rightNosePad.position.set(0.36, -0.32, 0.23);
+    rightNosePad.rotation.set(0.28, -0.18, 0.32);
+    rightNosePad.scale.set(0.64, 1.05, 0.28);
+    rightNosePad.renderOrder = 2;
+    glassesGroupRef.current.add(rightNosePad);
 
     // Elegant Temples (Arms) extending backward
     // Left temple curve
@@ -377,33 +557,33 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
     const templeMetalRadius = 0.035;
 
     // Left Acetate Sleeve
-    const leftTempleGeom = new THREE.TubeGeometry(leftTempleCurve, 32, templeAcetateRadius, 8, false);
+    const leftTempleGeom = getCachedGeometry(cache, `${style}-left-temple`, () => new THREE.TubeGeometry(leftTempleCurve, 20, templeAcetateRadius, 8, false));
     const leftTempleMesh = new THREE.Mesh(leftTempleGeom, frameMaterial);
     leftTempleMesh.castShadow = true;
     glassesGroupRef.current.add(leftTempleMesh);
 
     // Left inner precious titanium core rod (visible when frame is translucent!)
     if (customization.transmissionType === 'translucent') {
-      const leftCoreGeom = new THREE.TubeGeometry(leftTempleCurve, 32, templeMetalRadius, 6, false);
+      const leftCoreGeom = getCachedGeometry(cache, `${style}-left-temple-core`, () => new THREE.TubeGeometry(leftTempleCurve, 18, templeMetalRadius, 6, false));
       const leftCoreMesh = new THREE.Mesh(leftCoreGeom, hingeMaterial);
       glassesGroupRef.current.add(leftCoreMesh);
     }
 
     // Right Acetate Sleeve
-    const rightTempleGeom = new THREE.TubeGeometry(rightTempleCurve, 32, templeAcetateRadius, 8, false);
+    const rightTempleGeom = getCachedGeometry(cache, `${style}-right-temple`, () => new THREE.TubeGeometry(rightTempleCurve, 20, templeAcetateRadius, 8, false));
     const rightTempleMesh = new THREE.Mesh(rightTempleGeom, frameMaterial);
     rightTempleMesh.castShadow = true;
     glassesGroupRef.current.add(rightTempleMesh);
 
     // Right inner metal core rod
     if (customization.transmissionType === 'translucent') {
-      const rightCoreGeom = new THREE.TubeGeometry(rightTempleCurve, 32, templeMetalRadius, 6, false);
+      const rightCoreGeom = getCachedGeometry(cache, `${style}-right-temple-core`, () => new THREE.TubeGeometry(rightTempleCurve, 18, templeMetalRadius, 6, false));
       const rightCoreMesh = new THREE.Mesh(rightCoreGeom, hingeMaterial);
       glassesGroupRef.current.add(rightCoreMesh);
     }
 
     // Small metal tipping caps at end of tips
-    const tipEndGeom = new THREE.SphereGeometry(0.1, 8, 8);
+    const tipEndGeom = getCachedGeometry(cache, 'temple-tip-sphere', () => new THREE.SphereGeometry(0.1, 8, 8));
     const leftTipEnd = new THREE.Mesh(tipEndGeom, hingeMaterial);
     leftTipEnd.position.set(templeStartX - 0.082, templeStartY - 0.72, -4.15);
     glassesGroupRef.current.add(leftTipEnd);
@@ -412,45 +592,53 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
     rightTipEnd.position.set(templeRightStartX + 0.082, templeStartY - 0.72, -4.15);
     glassesGroupRef.current.add(rightTipEnd);
 
-  }, [customization.style, customization.hingeGold, customization.transmissionType, isReady]);
+    if (!hasReportedReadyRef.current) {
+      hasReportedReadyRef.current = true;
+      onReadyRef.current?.();
+    }
 
-  // Handle live color updating in the active loop seamlessly (very snappy rendering!)
+  }, [customization.style, customization.transmissionType, isReady]);
+
+  useEffect(() => {
+    if (!hingeMaterialRef.current) return;
+
+    const hingeMaterial = hingeMaterialRef.current;
+    hingeMaterial.color.set(customization.hingeGold ? '#dfb76c' : '#c6c9cf');
+    hingeMaterial.metalness = customization.hingeGold ? 0.92 : 0.84;
+    hingeMaterial.roughness = customization.hingeGold ? 0.16 : 0.22;
+    hingeMaterial.needsUpdate = true;
+  }, [customization.hingeGold, isReady]);
+
+  // Handle live material updates without rebuilding geometry.
   useEffect(() => {
     if (!frameMaterialRef.current || !lensMaterialRef.current) return;
 
     // Apply active frame customizations directly to materials to animate in real-time
     const fMat = frameMaterialRef.current;
     const lMat = lensMaterialRef.current;
+    const fConfig = FRAME_COLORS[customization.frameColor] || FRAME_COLORS['matte-black'];
+    const lConfig = LENS_COLORS[customization.lensColor] || LENS_COLORS['solar-charcoal'];
 
-    // Frame Colors definition mapping
-    const frameColors: Record<string, { hex: string; transmission: number; opacity: number; roughness: number; metalness: number }> = {
-      'matte-black': { hex: '#16161a', transmission: 0.0, opacity: 1.0, roughness: 0.85, metalness: 0.1 },
-      'champagne-crystal': { hex: '#eedbb0', transmission: 0.95, opacity: 0.65, roughness: 0.08, metalness: 0.05 },
-      'polished-amber': { hex: '#d97706', transmission: 0.45, opacity: 0.9, roughness: 0.12, metalness: 0.05 },
-      'rose-acetate': { hex: '#fda4af', transmission: 0.8, opacity: 0.75, roughness: 0.15, metalness: 0.05 },
-      'pure-gold': { hex: '#d4af37', transmission: 0.0, opacity: 1.0, roughness: 0.2, metalness: 0.95 },
-      'platinum': { hex: '#e2e8f0', transmission: 0.0, opacity: 1.0, roughness: 0.1, metalness: 0.9 }
-    };
-
-    // Lens Colors definition mapping
-    const lensColors: Record<string, { hex: string; transmission: number; opacity: number; roughness: number; metalness: number }> = {
-      'solar-charcoal': { hex: '#0f172a', transmission: 0.5, opacity: 0.88, roughness: 0.05, metalness: 0.2 },
-      'blue-block': { hex: '#38bdf8', transmission: 0.85, opacity: 0.6, roughness: 0.02, metalness: 0.45 },
-      'sunset-gold': { hex: '#f59e0b', transmission: 0.65, opacity: 0.78, roughness: 0.05, metalness: 0.75 },
-      'forest-ocean': { hex: '#0d9488', transmission: 0.7, opacity: 0.82, roughness: 0.05, metalness: 0.3 }
-    };
-
-    const fConfig = frameColors[customization.frameColor] || frameColors['matte-black'];
-    const lConfig = lensColors[customization.lensColor] || lensColors['solar-charcoal'];
+    if (customization.frameColor === 'polished-amber' && customization.transmissionType !== 'matte') {
+      if (!tortoiseTextureRef.current) {
+        tortoiseTextureRef.current = createTortoiseTexture();
+      }
+      fMat.map = tortoiseTextureRef.current;
+    } else {
+      fMat.map = null;
+    }
 
     // Update Frame material
     fMat.color.set(fConfig.hex);
     fMat.roughness = fConfig.roughness;
     fMat.metalness = fConfig.metalness;
     fMat.transmission = customization.transmissionType === 'translucent' ? Math.max(0.7, fConfig.transmission) : (customization.transmissionType === 'matte' ? 0 : fConfig.transmission);
-    fMat.thickness = 0.8;
+    fMat.thickness = customization.transmissionType === 'translucent' ? 1.05 : 0.5;
     fMat.opacity = customization.transmissionType === 'translucent' ? 0.78 : fConfig.opacity;
     fMat.ior = 1.48;
+    fMat.clearcoat = customization.transmissionType === 'matte' ? 0.18 : 0.9;
+    fMat.clearcoatRoughness = customization.transmissionType === 'matte' ? 0.5 : 0.08;
+    fMat.envMapIntensity = customization.transmissionType === 'matte' ? 0.45 : 1.1;
     fMat.transparent = fMat.opacity < 1.0 || fMat.transmission > 0;
     fMat.needsUpdate = true;
 
@@ -460,11 +648,14 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
     lMat.metalness = lConfig.metalness;
     lMat.transmission = lConfig.transmission;
     lMat.opacity = lConfig.opacity;
-    lMat.thickness = 0.2;
+    lMat.thickness = 0.24;
     lMat.ior = 1.54;
     lMat.transparent = true;
+    lMat.depthWrite = false;
+    lMat.side = THREE.DoubleSide;
     lMat.clearcoat = 1.0;
-    lMat.clearcoatRoughness = 0.05;
+    lMat.clearcoatRoughness = 0.025;
+    lMat.envMapIntensity = 1.25;
     lMat.needsUpdate = true;
 
   }, [customization.frameColor, customization.lensColor, customization.transmissionType, isReady]);
@@ -488,42 +679,53 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
     camera.position.set(0, 0, 8.5);
 
     // 3. Renderer Initializing
-    const renderer = new THREE.WebGLRenderer({
-      canvas: canvasRef.current,
-      alpha: true,
-      antialias: true,
-      powerPreference: 'high-performance'
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvasRef.current,
+        alpha: true,
+        antialias: true,
+        powerPreference: 'high-performance'
+      });
+    } catch (error) {
+      console.warn('WebGL is unavailable, continuing without the 3D spectacle canvas.', error);
+      setHasWebGLError(true);
+      onReadyRef.current?.();
+      return;
+    }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAIN_CANVAS_DPR));
     renderer.setSize(width, height);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     // 4. Lights
-    const ambientLight = new THREE.AmbientLight('#ffffff', 1.0);
-    scene.add(ambientLight);
+    const hemiLight = new THREE.HemisphereLight('#fff8ee', '#1c2433', 1.1);
+    scene.add(hemiLight);
 
     // Warm Key Directional Light
-    const dirLight1 = new THREE.DirectionalLight('#fff7ed', 3.5);
+    const dirLight1 = new THREE.DirectionalLight('#fff7ed', 3.2);
     dirLight1.position.set(5, 5, 6);
     dirLight1.castShadow = true;
-    dirLight1.shadow.mapSize.width = 1024;
-    dirLight1.shadow.mapSize.height = 1024;
+    dirLight1.shadow.mapSize.width = 768;
+    dirLight1.shadow.mapSize.height = 768;
     dirLight1.shadow.bias = -0.0002;
     scene.add(dirLight1);
 
     // Soft Blue Fill Light
-    const dirLight2 = new THREE.DirectionalLight('#eff6ff', 2.0);
+    const dirLight2 = new THREE.DirectionalLight('#eff6ff', 1.6);
     dirLight2.position.set(-5, 2, 4);
     scene.add(dirLight2);
 
     // Top Rim Light
-    const rimLight = new THREE.DirectionalLight('#ffffff', 3.0);
+    const rimLight = new THREE.DirectionalLight('#ffffff', 2.6);
     rimLight.position.set(0, 8, -5);
     scene.add(rimLight);
 
     // Point Light next to frame center for high specular highlights
-    const highlightLight = new THREE.PointLight('#dfb76c', 1.5, 10);
+    const highlightLight = new THREE.PointLight('#dfb76c', 1.1, 10);
     highlightLight.position.set(0, 0, 3);
     scene.add(highlightLight);
 
@@ -541,17 +743,33 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
       metalness: 0.1,
       transmission: 0.5,
       opacity: 0.9,
-      transparent: true
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      clearcoat: 1,
+      clearcoatRoughness: 0.025
     });
     const hingeMaterial = new THREE.MeshStandardMaterial({
       color: '#dfb76c',
       metalness: 0.95,
       roughness: 0.1
     });
+    const nosePadMaterial = new THREE.MeshPhysicalMaterial({
+      color: '#f4f1eb',
+      roughness: 0.18,
+      metalness: 0,
+      transmission: 0.72,
+      opacity: 0.46,
+      transparent: true,
+      thickness: 0.28,
+      ior: 1.42,
+      depthWrite: false
+    });
 
     frameMaterialRef.current = frameMaterial;
     lensMaterialRef.current = lensMaterial;
     hingeMaterialRef.current = hingeMaterial;
+    nosePadMaterialRef.current = nosePadMaterial;
 
     // 6. Master Spec-Group & Spectacles Case Group
     const specsGroup = new THREE.Group();
@@ -628,7 +846,7 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
     stageGroup.visible = false;
 
     // Main platform (dark satin plinth)
-    const stageBaseGeom = new THREE.CylinderGeometry(1.8, 1.8, 0.1, 64);
+    const stageBaseGeom = new THREE.CylinderGeometry(1.8, 1.8, 0.1, 40);
     const stageBaseMat = new THREE.MeshPhysicalMaterial({
       color: '#0a0a0b',
       roughness: 0.18,
@@ -642,7 +860,7 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
     stageGroup.add(stageBaseMesh);
 
     // Gold edge rim accent
-    const stageGoldTrimGeom = new THREE.CylinderGeometry(1.805, 1.805, 0.03, 64);
+    const stageGoldTrimGeom = new THREE.CylinderGeometry(1.805, 1.805, 0.03, 40);
     const stageGoldTrimMat = new THREE.MeshStandardMaterial({
       color: '#dfb76c',
       roughness: 0.15,
@@ -653,7 +871,7 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
     stageGroup.add(stageGoldTrimMesh);
 
     // Emissive Glowing Ring at the stage edge
-    const ringGeom = new THREE.TorusGeometry(1.76, 0.012, 8, 64);
+    const ringGeom = new THREE.TorusGeometry(1.76, 0.012, 8, 48);
     const ringMat = new THREE.MeshBasicMaterial({
       color: '#dfb76c',
       toneMapped: false
@@ -663,7 +881,7 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
     ringMesh.position.y = 0.055; // Raised slightly to sit perfectly on top of the gold trim lip
     stageGroup.add(ringMesh);
 
-    // Trigger state to show canvas is ready
+    // Trigger the geometry build pass; App readiness is reported after meshes are created.
     setIsReady(true);
 
     let currentSection = 'hero';
@@ -683,20 +901,21 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
       const { isDesktop, isTablet, isMobile } = context.conditions as any;
 
       // Base properties setting (Section 1: Hero - Specs initially nested closed inside case)
-      specsGroup.position.set(0, -0.15, 1.25);
+      specsGroup.position.set(0, -0.45, 1.25);
       specsGroup.rotation.set(0.12, 0, 0); // Front-facing / centered!
       specsGroup.scale.set(0.001, 0.001, 0.001); // Start completely tiny (concealed inside)
 
-      caseGroup.position.set(0, -0.1, 1.25);
+      caseGroup.position.set(0, isDesktop ? -0.48 : -0.62, 1.25);
       caseGroup.rotation.set(0.12, 0, 0); // Centered!
-      caseGroup.scale.set(1.1, 1.1, 1.1);
+      const heroCaseScale = isDesktop ? 0.86 : (isTablet ? 0.78 : 0.68);
+      caseGroup.scale.set(heroCaseScale, heroCaseScale, heroCaseScale);
       lidPivot.rotation.x = 0; // Case lid is closed!
 
       // Initialize HTML elements to hidden layout states
-      gsap.set('#main-navigation', { opacity: 0, y: -40 });
-      gsap.set('#hero-left-text', { opacity: 0, x: -28 });
-      gsap.set('#hero-right-text', { opacity: 0, x: 28 });
-      gsap.set('#hero-scroll-indicator', { opacity: 0, y: 30 });
+      gsap.set('#main-navigation', { opacity: 1, y: 0 });
+      gsap.set('#hero-left-text', { opacity: 1, x: 0 });
+      gsap.set('#hero-right-text', { opacity: 1, x: 0 });
+      gsap.set('#hero-scroll-indicator', { opacity: 1, y: 0 });
       gsap.set('#customizer-panel-section', { opacity: 0, y: 150 });
       gsap.set('#catalog-trigger', { opacity: 0, y: 80 });
 
@@ -995,6 +1214,15 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
     // 8. Animation & Floating/Hover Effect loop
     let clock = new THREE.Clock();
     let animationFrameId: number;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const pointerTarget = new THREE.Vector2(0, 0);
+
+    const handlePointerMove = (event: PointerEvent) => {
+      pointerTarget.x = (event.clientX / window.innerWidth - 0.5) * 2;
+      pointerTarget.y = (event.clientY / window.innerHeight - 0.5) * 2;
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
@@ -1002,7 +1230,7 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
       const elapsedTime = clock.getElapsedTime();
 
       // Gentle floating waving movement based on elapsed time to feel organic
-      if (specsGroup) {
+      if (specsGroup && !prefersReducedMotion) {
         const scrollFraction = window.scrollY / window.innerHeight;
         if (scrollFraction < 0.15) {
           // Slow passive wiggle when sitting in the case (Hero), keeping it centered
@@ -1013,11 +1241,13 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
       if (glassesGroupRef.current) {
         // Float the child mesh cleanly rather than the parent specsGroup,
         // which prevents vertical drifting and prevents conflicts with GSAP scrubbing.
-        glassesGroupRef.current.position.y = Math.sin(elapsedTime * 1.5) * 0.08;
+        glassesGroupRef.current.position.y = prefersReducedMotion ? 0 : Math.sin(elapsedTime * 1.5) * 0.08;
+        glassesGroupRef.current.rotation.x = THREE.MathUtils.lerp(glassesGroupRef.current.rotation.x, pointerTarget.y * 0.035, 0.035);
+        glassesGroupRef.current.rotation.y = THREE.MathUtils.lerp(glassesGroupRef.current.rotation.y, pointerTarget.x * 0.055, 0.035);
       }
 
       // Keep light tracking model position
-      if (highlightLight) {
+      if (highlightLight && !prefersReducedMotion) {
         highlightLight.position.x = Math.sin(elapsedTime) * 3;
         highlightLight.position.y = Math.cos(elapsedTime) * 3;
       }
@@ -1038,7 +1268,7 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
       camera.updateProjectionMatrix();
 
       renderer.setSize(w, h);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAIN_CANVAS_DPR));
     });
 
     if (containerRef.current) {
@@ -1048,6 +1278,7 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
     // 10. Cleanups
     return () => {
       cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('pointermove', handlePointerMove);
       resizeObserver.disconnect();
       mm.revert(); // Reverts matchMedia states cleanly and cleans up internal elements
       ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
@@ -1055,7 +1286,9 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
       // Dispose scene resources recursively
       scene.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
-          obj.geometry.dispose();
+          if (!obj.geometry.userData.cached) {
+            obj.geometry.dispose();
+          }
           if (Array.isArray(obj.material)) {
             obj.material.forEach((mat) => mat.dispose());
           } else {
@@ -1063,16 +1296,24 @@ export default function SpecsCanvas({ customization, onScrollSectionChange }: Sp
           }
         }
       });
+      geometryCacheRef.current.forEach((geometry) => geometry.dispose());
+      geometryCacheRef.current.clear();
+      tortoiseTextureRef.current?.dispose();
+      tortoiseTextureRef.current = null;
       renderer.dispose();
     };
   }, []);
+
+  if (hasWebGLError) {
+    return null;
+  }
 
   return (
     <div
       ref={containerRef}
       id="specs-canvas-container"
       className="fixed inset-0 w-full h-full pointer-events-none"
-      style={{ zIndex: 10 }}
+      style={{ zIndex: 1 }}
     >
       <canvas
         ref={canvasRef}
